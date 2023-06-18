@@ -1,11 +1,14 @@
 using Marten;
 using Marten.Events;
 using Marten.Events.Daemon.Resiliency;
-using Marten.Storage;
+
+using Repro.Handlers;
+using Repro.Sagas;
 
 using Weasel.Core;
 
 using Wolverine;
+using Wolverine.ErrorHandling;
 using Wolverine.Marten;
 
 namespace Repro;
@@ -21,14 +24,16 @@ public class MartenAndWolverineSetup
       {
         var o = new StoreOptions();
 
-        o.Connection(configuration.GetConnectionString(name: "Marten") ??
+        o.Connection(configuration.GetConnectionString("Marten") ??
                      throw new
-                       InvalidOperationException(message:
-                                                 "Please set the connection string \"Marten\" in appsettings."));
+                       InvalidOperationException("Please set the connection string \"Marten\" in appsettings."));
 
         o.DatabaseSchemaName = "saga_events";
         o.Events.StreamIdentity = StreamIdentity.AsString;
-        o.RetryPolicy(DefaultRetryPolicy.Once(sleep: attempt => TimeSpan.FromMilliseconds(100 * attempt)));
+
+        o.RegisterDocumentType<FirstSaga>();
+        o.RegisterDocumentType<SecondSaga>();
+        o.Projections.LiveStreamAggregation<TheDomainModel>();
 
         o.AutoCreateSchemaObjects = AutoCreate.All;
 
@@ -38,7 +43,7 @@ public class MartenAndWolverineSetup
       // This is the wolverine integration for the outbox/inbox,
       // transactional middleware, saga persistence we don't care about
       // yet.
-      .IntegrateWithWolverine(schemaName: "wolverine_messages")
+      .IntegrateWithWolverine("wolverine_messages")
 
       // Publish event stream events to Wolverine.
       .EventForwardingToWolverine()
@@ -48,7 +53,7 @@ public class MartenAndWolverineSetup
       .ApplyAllDatabaseChangesOnStartup()
 
       // Required for MultiStreamAggregations.
-      .AddAsyncDaemon(mode: DaemonMode.Solo)
+      .AddAsyncDaemon(DaemonMode.Solo)
 
       // Default session type.
       .UseLightweightSessions();
@@ -57,6 +62,8 @@ public class MartenAndWolverineSetup
   public static void ConfigureWolverine(HostBuilderContext context,
                                         WolverineOptions o)
   {
+    o.Policies.OnAnyException().Discard();
+
     // Automatic transactions around handlers.
     o.Policies.AutoApplyTransactions();
 

@@ -9,8 +9,8 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.5" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-        <PackageReference Include="WolverineFx" Version="0.9.18" />
-        <PackageReference Include="WolverineFx.Marten" Version="0.9.18" />
+        <PackageReference Include="WolverineFx" Version="0.9.19" />
+        <PackageReference Include="WolverineFx.Marten" Version="0.9.19" />
     </ItemGroup>
 
 </Project>

@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using Oakton;
+using Oakton.Resources;
+
 using Repro;
 using Repro.Handlers;
 using Repro.Sagas;
@@ -12,8 +15,10 @@ MartenAndWolverineSetup.ConfigureMarten(services: builder.Services,
                                         configuration: builder.Configuration,
                                         env: builder.Environment);
 
+builder.Host.ApplyOaktonExtensions();
 builder.Host.UseWolverine(overrides: MartenAndWolverineSetup.ConfigureWolverine);
 
+builder.Services.AddResourceSetupOnStartup();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -35,4 +40,4 @@ app.MapGet(pattern: "/second",
              await bus.InvokeAsync(new CauseSecondToBeEmitted(Id: id), cancellation: ct);
            });
 
-app.Run();
+await app.RunOaktonCommands(args);
